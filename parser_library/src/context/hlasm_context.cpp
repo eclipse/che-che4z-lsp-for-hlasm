@@ -257,7 +257,7 @@ hlasm_context::hlasm_context(std::string file_name, asm_option asm_options)
     , asm_options_(std::move(asm_options))
     , instruction_map_(init_instruction_map())
     , SYSNDX_(0)
-    , ord_ctx(ids_)
+    , ord_ctx(ids_, *this)
 {
     scope_stack_.emplace_back();
     visited_files_.insert(file_name);

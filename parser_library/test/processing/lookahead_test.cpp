@@ -222,7 +222,8 @@ TEST(attribute_lookahead, nested_lookup_triggered)
     a.hlasm_ctx().ord_ctx.add_symbol_reference(context::symbol(a.hlasm_ctx().ids().add("B"),
         context::symbol_value(),
         context::symbol_attributes(context::symbol_origin::EQU, 'U'_ebcdic, 1),
-        location()));
+        location(),
+        {}));
 
     res = expr->get_undefined_attributed_symbols(eval_ctx);
     ASSERT_EQ(res.size(), (size_t)1);

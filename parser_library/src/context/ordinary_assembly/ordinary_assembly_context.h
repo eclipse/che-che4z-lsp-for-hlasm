@@ -28,6 +28,8 @@
 
 namespace hlasm_plugin::parser_library::context {
 
+class hlasm_context;
+
 // class holding complete information about the 'ordinary assembly' (assembler and machine instructions)
 // it contains 'sections' ordinary 'symbols' and all dependencies between them
 class ordinary_assembly_context : public dependency_solver
@@ -44,14 +46,14 @@ class ordinary_assembly_context : public dependency_solver
 public:
     // access id storage
     id_storage& ids;
-
+    const hlasm_context& hlasm_ctx_;
     // access sections
     const std::vector<std::unique_ptr<section>>& sections() const;
 
     // access symbol dependency table
     symbol_dependency_tables symbol_dependencies;
 
-    ordinary_assembly_context(id_storage& storage);
+    ordinary_assembly_context(id_storage& storage, const hlasm_context& hlasm_ctx);
 
     // creates symbol
     // returns false if loctr cycle has occured
