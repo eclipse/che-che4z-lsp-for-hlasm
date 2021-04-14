@@ -20,6 +20,7 @@
 #include <limits>
 #include <sstream>
 
+#include "config/pgm_conf.h"
 #include "nlohmann/json.hpp"
 #include "workspace_manager.h"
 #include "workspaces/file_impl.h"
@@ -283,13 +284,11 @@ int main(int argc, char** argv)
     // configuration contents
     std::string conf((std::istreambuf_iterator<char>(in)), (std::istreambuf_iterator<char>()));
 
-    json programs;
+    hlasm_plugin::parser_library::config::pgm_conf program_config;
     try
     {
-        // parsed to json
-        json conf_json = json::parse(conf);
-        // list of programs
-        programs = conf_json["pgms"];
+        // parse pgm_conf.json
+        json::parse(conf).get_to(program_config);
     }
     catch (...)
     {
@@ -316,7 +315,7 @@ int main(int argc, char** argv)
         std::cout.flush();
         size_t current_iter = 0;
         bool not_first = false;
-        for (auto program : programs)
+        for (const auto& pgm : program_config.pgms)
         {
             if (current_iter >= end_range && end_range > 0)
                 break;
@@ -325,16 +324,7 @@ int main(int argc, char** argv)
                 current_iter++;
                 continue;
             }
-            std::string source_file;
-            // program file
-            if (program.find("program") != program.end())
-                source_file = program["program"].get<std::string>();
-            else
-            {
-                ++s.failed_file_opens;
-                std::clog << "Malformed json" << std::endl;
-                continue;
-            }
+            const std::string& source_file = pgm.program;
 
             json j = parse_one_file(source_file,
                 ws_folder,
@@ -357,8 +347,8 @@ int main(int argc, char** argv)
                   << "Analyzer crashes: " << s.parsing_crashes << '\n'
                   << "Failed program opens: " << s.failed_file_opens << '\n'
                   << "Benchmark time: " << s.whole_time << " ms" << '\n'
-                  << "Average statement/ms: " << s.average_stmt_ms / (double)programs.size() << '\n'
-                  << "Average line/ms: " << s.average_line_ms / (double)programs.size() << "\n\n"
+                  << "Average statement/ms: " << s.average_stmt_ms / (double)program_config.pgms.size() << '\n'
+                  << "Average line/ms: " << s.average_line_ms / (double)program_config.pgms.size() << "\n\n"
                   << std::endl;
 
         std::cout << json({ { "Programs", s.program_count },
@@ -366,8 +356,8 @@ int main(int argc, char** argv)
                               { "Benchmark time(ms)", s.whole_time },
                               { "Analyzer crashes", s.parsing_crashes },
                               { "Failed program opens", s.failed_file_opens },
-                              { "Average statement/ms", s.average_stmt_ms / (double)programs.size() },
-                              { "Average line/ms", s.average_line_ms / (double)programs.size() } })
+                              { "Average statement/ms", s.average_stmt_ms / (double)program_config.pgms.size() },
+                              { "Average line/ms", s.average_line_ms / (double)program_config.pgms.size() } })
                          .dump(2);
         std::cout << "}\n";
         std::clog << "Parse finished\n\n" << std::endl;

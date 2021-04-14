@@ -10,8 +10,9 @@
 # Contributors:
 #   Broadcom, Inc. - initial API and implementation
 
-target_sources(hlasm_utils PUBLIC
-	list_directory_rc.h
-	path.h
-	platform.h
+target_sources(parser_library PRIVATE
+	pgm_conf.cpp
+	pgm_conf.h
+	proc_conf.cpp
+	proc_conf.h
 )

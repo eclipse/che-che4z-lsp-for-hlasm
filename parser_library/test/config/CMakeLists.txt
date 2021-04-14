@@ -10,8 +10,7 @@
 # Contributors:
 #   Broadcom, Inc. - initial API and implementation
 
-target_sources(hlasm_utils PUBLIC
-	list_directory_rc.h
-	path.h
-	platform.h
+target_sources(library_test PRIVATE
+	pgm_conf_test.cpp
+	proc_conf_test.cpp
 )

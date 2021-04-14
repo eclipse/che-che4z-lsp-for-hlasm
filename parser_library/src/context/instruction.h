@@ -24,21 +24,37 @@
 #include "checking/instr_operand.h"
 #include "diagnostic.h"
 #include "id_storage.h"
-
 namespace hlasm_plugin {
 namespace parser_library {
 namespace context {
 
 // all mach_format types for operands of machine instructions:
+// formats with length 16 are arranged in range (0,2),formats with length 32 are arranged in range(3,20),formats with
+// length 48 are arranged in range (21,77)
 enum class mach_format
 {
     E,
     I,
+    RR,
     IE,
-    MII,
+    RRD,
+    RRE,
+    RRF_a,
+    RRF_b,
+    RRF_c,
+    RRF_d,
+    RRF_e,
     RI_a,
     RI_b,
     RI_c,
+    RS_a,
+    RS_b,
+    RSI,
+    RX_a,
+    RX_b,
+    S,
+    SI,
+    MII,
     RIE_a,
     RIE_b,
     RIE_c,
@@ -50,30 +66,15 @@ enum class mach_format
     RIL_b,
     RIL_c,
     RIS,
-    RR,
-    RRD,
-    RRE,
-    RRF_a,
-    RRF_b,
-    RRF_c,
-    RRF_d,
-    RRF_e,
     RRS,
-    RS_a,
-    RS_b,
-    RSI,
     RSL_a,
     RSL_b,
     RSY_a,
     RSY_b,
-    RX_a,
-    RX_b,
     RXE,
     RXF,
     RXY_a,
     RXY_b,
-    S,
-    SI,
     SIL,
     SIY,
     SMI,
@@ -169,7 +170,10 @@ const checking::machine_operand_format reg_imm_12_S = checking::machine_operand_
 const checking::machine_operand_format reg_imm_16_S = checking::machine_operand_format(reg_imm_16s, empty, empty);
 const checking::machine_operand_format reg_imm_24_S = checking::machine_operand_format(reg_imm_24s, empty, empty);
 const checking::machine_operand_format reg_imm_32_S = checking::machine_operand_format(reg_imm_32s, empty, empty);
-
+// intervals dividing formats based on length
+const int length_sixteen_interval = 3;
+const int length_thirtytwo_interval = 21;
+const int length_fortyeight_interval = 78;
 // machine instruction representation for checking
 class machine_instruction
 {
@@ -185,24 +189,39 @@ public:
         mach_format format,
         std::vector<checking::machine_operand_format> operands,
         int no_optional,
-        size_t size,
+
         size_t page_no)
         : instr_name(name)
         , format(format)
         , operands(operands)
-        , size_for_alloc(size)
+        , size_for_alloc(get_length_by_format(format))
         , no_optional(no_optional)
         , page_no(page_no) {};
     machine_instruction(const std::string& name,
         mach_format format,
         std::vector<checking::machine_operand_format> operands,
-        size_t size,
         size_t page_no)
-        : machine_instruction(name, format, operands, 0, size, page_no)
+        : machine_instruction(name, format, operands, 0, page_no)
     {}
 
     bool check_nth_operand(size_t place, const checking::machine_operand* operand);
 
+    int get_length_by_format(mach_format instruction_format) const
+    {
+        auto interval = (int)(instruction_format);
+        if (interval < length_sixteen_interval)
+        {
+            return 16;
+        }
+        if (interval < length_thirtytwo_interval)
+        {
+            return 32;
+        }
+        if (interval < length_fortyeight_interval)
+        {
+            return 48;
+        }
+    }
     virtual bool check(const std::string& name_of_instruction,
         const std::vector<const checking::machine_operand*> operands,
         const range& stmt_range,

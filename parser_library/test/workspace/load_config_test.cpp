@@ -22,6 +22,7 @@
 #include "utils/platform.h"
 #include "workspaces/file_impl.h"
 #include "workspaces/file_manager_impl.h"
+#include "workspaces/library_local.h"
 #include "workspaces/workspace.h"
 
 using namespace hlasm_plugin::parser_library;
@@ -52,13 +53,7 @@ public:
         "C:\\Users\\Desktop\\ASLib",
         "lib",
         "libs\\lib2\\",
-		"",
-        {
-          "run": "ftp \\192.168.12.145\\MyASLib",
-          "list": "",
-          "cache_expire":"",
-          "location": "downLibs"
-        }
+		""
       ],
                 
                 "asm_options": {
@@ -71,11 +66,7 @@ public:
       "libs": [
         "C:\\Users\\Desktop\\ASLib",
         "P2lib",
-        "P2libs\\libb",
-        {
-          "run": "ftp \\192.168.12.145\\MyASLib",
-          "location": "\\downLibs"
-        }
+        "P2libs\\libb"
       ]
     }
   ]
@@ -88,13 +79,7 @@ public:
 					"/home/user/ASLib",
 					"lib",
 					"libs/lib2/",
-			"",
-					{
-						"run": "ftp /192.168.12.145/MyASLib",
-						"list": "",
-						"cache_expire":"",
-						"location": "downLibs"
-					}
+			""
 				],
                 
                 "asm_options": {
@@ -107,11 +92,7 @@ public:
 				"libs": [
 					"/home/user/ASLib",
 					"P2lib",
-					"P2libs/libb",
-					{
-						"run": "ftp /192.168.12.145/MyASLib",
-						"location": "downLibs"
-					}
+					"P2libs/libb"
 				]
 			}
 		]
@@ -255,11 +236,8 @@ TEST(workspace, load_config_synthetic)
         EXPECT_EQ(expected2[i], libl->get_lib_path());
     }
     // test of asm_options
-#ifdef _WIN32
-    auto& asm_options = ws.get_asm_options("test_proc_grps_uri\\pgm1");
-#else
-    auto& asm_options = ws.get_asm_options("test_proc_grps_uri/pgm1");
-#endif
+    const auto& asm_options = ws.get_asm_options(is_windows() ? "test_proc_grps_uri\\pgm1" : "test_proc_grps_uri/pgm1");
+
     EXPECT_EQ("SEVEN", asm_options.sysparm);
     EXPECT_EQ("MAC1", asm_options.profile);
 }

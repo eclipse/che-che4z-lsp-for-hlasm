@@ -15,16 +15,19 @@
 #ifndef HLASMPLUGIN_PARSERLIBRARY_PROCESSOR_GROUP_H
 #define HLASMPLUGIN_PARSERLIBRARY_PROCESSOR_GROUP_H
 
+#include "config/proc_conf.h"
 #include "diagnosable_impl.h"
 #include "library.h"
+
 namespace hlasm_plugin::parser_library::workspaces {
 
 // Represents a named set of libraries (processor_group)
 class processor_group : public diagnosable_impl
 {
 public:
-    processor_group(const std::string& name)
+    processor_group(const std::string& name, const config::assembler_options& asm_options)
         : name_(name)
+        , asm_optns { asm_options.sysparm, asm_options.profile }
     {}
 
     void collect_diags() const override
@@ -36,12 +39,6 @@ public:
     }
 
     void add_library(std::unique_ptr<library> library) { libs_.push_back(std::move(library)); }
-
-    void add_asm_options(std::map<std::string, std::string> asm_options)
-    {
-        asm_optns.sysparm = asm_options.count("SYSPARM") ? asm_options.at("SYSPARM") : "";
-        asm_optns.profile = asm_options.count("PROFILE") ? asm_options.at("PROFILE") : "";
-    }
 
     const std::string& name() const { return name_; }
 

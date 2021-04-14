@@ -3,8 +3,15 @@
     {
       "name": "P1",
       "libs": [
-        "libs","copy"
+        {
+          "path": "libs"
+        },
+        "copy"
       ]
     }
+  ],
+  "macro_extensions": [
+    "",
+    ".asm"
   ]
 }

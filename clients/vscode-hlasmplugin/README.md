@@ -88,7 +88,7 @@ Breakpoints can be set before or during the debugging session.
 ### External Macro Libraries and COPY Members
 The HLASM Language Support extension looks for locally stored members when a macro or COPY instruction is evaluated. The paths of these members are specified in two configuration files in the `.hlasmplugin` folder of the currently open workspace:
 
-- `proc_grps.json` defines _processor groups_ by assigning a group name to a list of directories. Hence, the group name serves as a unique identifier of a set of HLASM libraries defined by a list of directories.
+- `proc_grps.json` defines _processor groups_ by assigning a group name to a list of directories. Hence, the group name serves as a unique identifier of a set of HLASM libraries defined by a list of directories (some of which can be optional). Additionaly, the _SYSPARM_ and _PROFILE_ options can be specified in the `asm_options` section.
 
 - `pgm_conf.json` provides a mapping between _programs_ (open-code files) and processor groups. It specifies which list of directories is used with which source file. If a relative source file path is specified, it is relative to the current workspace.
 
@@ -103,7 +103,7 @@ When you open a HLASM file or manually set the HLASM language for a file, you ca
 
 Example `proc_grps.json`:
 
-The following example defines two processor groups, GROUP1 and GROUP2, and a list of directories to search for macros and COPY files.
+The following example defines two processor groups, GROUP1 and GROUP2, and a list of directories to search for macros and COPY files, it also defines the _SYSPARM_ assembler parameter for GROUP1. Additionally, if the library `MACLIB/` does not exist in the workspace, the plugin will not report it as an error.
 
 ```
 {
@@ -112,8 +112,15 @@ The following example defines two processor groups, GROUP1 and GROUP2, and a lis
       "name": "GROUP1",
       "libs": [
         "ASMMAC/",
+        {
+          "path": "MACLIB/",
+          "optional": true
+        },
         "C:/SYS.ASMMAC"
-      ]
+      ],
+      "asm_options": {
+        "SYSPARM": "ZOS210"
+      }
     },
     {
       "name": "GROUP2",
@@ -162,23 +169,35 @@ In this example, GROUP1 is used for all open code programs.
 
 ### File Extensions
 
-`pgm_conf.json` includes the optional parameter `alwaysRecognize` in which you can specify an array of wildcards. 
-- All files matching these wildcards are automatically recognized as HLASM files.
-- If an extension wildcard is defined, all macro and copy files with this extension can be used in the source code. 
+The `alwaysRecognize` option in `pgm_conf.json` has been deprecated in favour of the standard VSCode user and workspace level setting `file.associations`.
 
-For example, with the extension wildcard `*.hlasm`, a user can add the macro `MAC` to his source code even if it is in a file called `MAC.hlasm`. Additionally, all files with the extension `.hlasm` are automatically recognised as HLASM files.
+`proc_conf.json` may include an optional parameter `macro_extensions` which contains a list of extensions that are to be used to identify files with macro definitions.
+The options may be specified both at the top level of the file, providing the default list for all libraries in all process groups, and at the level of individual library definitions, overriding the default from the top level.
 
-The following example of `pgm_conf.json` specifies that the processor group `GROUP1` is assigned to both `source_code` and `source_code.hlasm`. Also, macro and copy files in the `lib` directory are referenced and correctly recognized in the program without the `.asm` extension.
+For example, with the extension `.hlasm`, a user can add the macro `MAC` to his source code even if it is in a file called `MAC.hlasm`.
+
+The following example of `proc_conf.json` specifies that macros have an extension `.hlasm` with the exception of macros search in the `C:/external/project/macs` directory, where they need to have `.mac` extension.
 
 ```
 {
-  "pgms": [
+  "pgroups": [
     {
-      "program": "source_code",
-      "pgroup": "GROUP1"
+      "name": "GROUP1",
+      "libs": [
+        "ASMMAC/",
+        "C:/SYS.ASMMAC",
+        {
+          "path": "C:/external/project/macs",
+          "macro_extensions": [
+            ".mac"
+          ]
+        }
+      ]
     }
   ],
-  "alwaysRecognize" : ["*.hlasm", "libs/*.asm"]
+  "macro_extensions": [
+    ".hlasm"
+  ]
 }
 ```
 

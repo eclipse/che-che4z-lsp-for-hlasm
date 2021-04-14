@@ -27,6 +27,7 @@ set(JSON_BuildTests Off)
 
 FetchContent_GetProperties(json)
 if(NOT json_POPULATED)
+  set(JSON_MultipleHeaders On)
   FetchContent_Populate(json)
   add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()

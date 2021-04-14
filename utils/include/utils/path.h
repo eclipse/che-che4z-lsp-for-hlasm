@@ -19,6 +19,8 @@
 #include <functional>
 #include <string>
 
+#include "list_directory_rc.h"
+
 namespace hlasm_plugin::utils::path {
 
 bool is_relative(const std::filesystem::path&);
@@ -30,14 +32,6 @@ std::filesystem::path lexically_normal(const std::filesystem::path& p);
 std::filesystem::path lexically_relative(const std::filesystem::path& p, std::string q);
 std::filesystem::path filename(const std::filesystem::path& p);
 bool equal(const std::filesystem::path& left, const std::filesystem::path& right);
-
-enum class list_directory_rc
-{
-    done,
-    not_exists,
-    not_a_directory,
-    other_failure,
-};
 
 list_directory_rc list_directory_regular_files(
     const std::filesystem::path& d, std::function<void(const std::filesystem::path&)> h);

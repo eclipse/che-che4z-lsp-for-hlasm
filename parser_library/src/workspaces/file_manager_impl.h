@@ -50,7 +50,7 @@ public:
 
     // Returns array of files that were updated since this method was last called
     virtual std::vector<processor_file*> list_updated_files();
-    std::unordered_map<std::string, std::string> list_directory_files(const std::string& path, bool optional) override;
+    list_directory_result list_directory_files(const std::string& path) override;
 
     void did_open_file(const std::string& document_uri, version_t version, std::string text) override;
     void did_change_file(

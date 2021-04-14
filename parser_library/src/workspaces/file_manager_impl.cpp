@@ -120,37 +120,15 @@ std::vector<processor_file*> file_manager_impl::list_updated_files()
     return list;
 }
 
-std::unordered_map<std::string, std::string> file_manager_impl::list_directory_files(
-    const std::string& path, bool optional)
+list_directory_result file_manager_impl::list_directory_files(const std::string& path)
 {
     std::filesystem::path lib_p(path);
-    std::unordered_map<std::string, std::string> found_files;
+    list_directory_result result;
 
-    auto ec = utils::path::list_directory_regular_files(lib_p, [&found_files](const std::filesystem::path& f) {
-        found_files[utils::path::filename(f).string()] = utils::path::absolute(f).string();
+    result.second = utils::path::list_directory_regular_files(lib_p, [&result](const std::filesystem::path& f) {
+        result.first[utils::path::filename(f).string()] = utils::path::absolute(f).string();
     });
-    switch (ec)
-    {
-        case hlasm_plugin::utils::path::list_directory_rc::done:
-            break;
-        case hlasm_plugin::utils::path::list_directory_rc::not_exists:
-            if (!optional)
-                add_diagnostic(diagnostic_s { "",
-                    {},
-                    "L0001",
-                    "Unable to load library: " + path + ". Error: The path does not point to directory." });
-            break;
-        case hlasm_plugin::utils::path::list_directory_rc::not_a_directory:
-            add_diagnostic(diagnostic_s { "",
-                {},
-                "L0001",
-                "Unable to load library: " + path + ". Error: The path does not point to directory." });
-            break;
-        case hlasm_plugin::utils::path::list_directory_rc::other_failure:
-            add_diagnostic(diagnostic_s { path, {}, "L0001", "Unable to load library: " + path + "." });
-            break;
-    }
-    return found_files;
+    return result;
 }
 
 void file_manager_impl::prepare_file_for_change_(std::shared_ptr<file_impl>& file)

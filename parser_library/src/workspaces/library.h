@@ -15,17 +15,14 @@
 #ifndef HLASMPLUGIN_PARSERLIBRARY_LIBRARY_H
 #define HLASMPLUGIN_PARSERLIBRARY_LIBRARY_H
 
-#include <regex>
+#include <memory>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 
-#include "diagnosable_impl.h"
-#include "file_manager.h"
-
-using extension_regex_map = std::unordered_multimap<std::string, std::regex>;
+#include "diagnosable.h"
 
 namespace hlasm_plugin::parser_library::workspaces {
+
+class processor;
 
 class library : public virtual diagnosable
 {
@@ -35,48 +32,6 @@ public:
 
 private:
 };
-
-#pragma warning(push)
-#pragma warning(disable : 4250)
-
-// library holds absolute path to a directory and finds macro files in it
-class library_local : public library, public diagnosable_impl
-{
-public:
-    // takes reference to file manager that provides access to the files
-    // and normalised path to directory that it wraps.
-    library_local(file_manager& file_manager,
-        std::string lib_path,
-        std::shared_ptr<const extension_regex_map> extensions,
-        bool optional = false);
-
-    library_local(const library_local&) = delete;
-    library_local& operator=(const library_local&) = delete;
-
-    library_local(library_local&&) noexcept;
-
-    void collect_diags() const override;
-
-    const std::string& get_lib_path() const;
-
-    std::shared_ptr<processor> find_file(const std::string& file) override;
-
-    // this function should be called from workspace, once watchedFilesChanged request is implemented
-    void refresh() override;
-
-private:
-    file_manager& file_manager_;
-
-    std::string lib_path_;
-    std::unordered_map<std::string, std::string> files_;
-    std::shared_ptr<const extension_regex_map> extensions_;
-    // indicates whether load_files function was called (not whether it was succesful)
-    bool files_loaded_ = false;
-    bool optional_ = false;
-
-    void load_files();
-};
-#pragma warning(pop)
 
 } // namespace hlasm_plugin::parser_library::workspaces
 #endif

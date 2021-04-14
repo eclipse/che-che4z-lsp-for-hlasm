@@ -34,6 +34,7 @@ target_sources(parser_library PRIVATE
 )
 
 add_subdirectory(checking)
+add_subdirectory(config)
 add_subdirectory(context)
 add_subdirectory(debugging)
 add_subdirectory(expressions)

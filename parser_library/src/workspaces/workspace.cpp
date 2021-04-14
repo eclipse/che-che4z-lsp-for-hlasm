@@ -14,12 +14,16 @@
 
 #include "workspace.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
+#include <memory>
 #include <regex>
 #include <string>
 
 #include "lib_config.h"
+#include "library_local.h"
+#include "nlohmann/json.hpp"
 #include "processor.h"
 #include "utils/path.h"
 #include "utils/platform.h"
@@ -38,7 +42,7 @@ workspace::workspace(const ws_uri& uri,
     , name_(name)
     , uri_(uri)
     , file_manager_(file_manager)
-    , implicit_proc_grp("pg_implicit")
+    , implicit_proc_grp("pg_implicit", {})
     , ws_path_(uri)
     , global_config_(global_config)
 {
@@ -327,134 +331,80 @@ bool workspace::load_and_process_config()
 
     opened_ = true;
 
-    json pgm_conf_json;
-    json proc_grps_json;
+    config::pgm_conf pgm_config;
+    config::proc_conf proc_groups;
     file_ptr pgm_conf_file;
 
-    bool load_ok = load_config(proc_grps_json, pgm_conf_json, pgm_conf_file);
+    bool load_ok = load_config(proc_groups, pgm_config, pgm_conf_file);
     if (!load_ok)
         return false;
 
-    // get extensions from pgm conf
-    extension_regex_map extensions;
-    std::regex extension_regex("^(.*\\*)(\\.\\w+)$");
-    json wildcards = pgm_conf_json["alwaysRecognize"];
-    for (const auto& wildcard : wildcards)
+    // Extract extension list for compatibility reasons
+    std::vector<std::string> macro_extensions_compatibility_list;
+    for (const auto& wildcard : pgm_config.always_recognize)
     {
-        std::string wildcard_str = wildcard.get<std::string>();
-        // extension wildcard
-        if (std::regex_match(wildcard_str, extension_regex))
-            extensions.insert({ std::regex_replace(wildcard_str, extension_regex, "$2"),
-                wildcard2regex(utils::path::join(ws_path, wildcard_str).string()) });
+        std::string_view wc(wildcard);
+        if (const auto ext_pattern = wc.rfind("*."); ext_pattern != std::string_view::npos)
+        {
+            wc.remove_prefix(ext_pattern + 1);
+            macro_extensions_compatibility_list.push_back(std::string(wc));
+        }
     }
+    std::sort(macro_extensions_compatibility_list.begin(), macro_extensions_compatibility_list.end());
+    macro_extensions_compatibility_list.erase(
+        std::unique(macro_extensions_compatibility_list.begin(), macro_extensions_compatibility_list.end()),
+        macro_extensions_compatibility_list.end());
 
-    /*auto suppress_diags_limit_json = pgm_conf_json.find("diagnosticsSuppressLimit");
-    if (suppress_diags_limit_json != pgm_conf_json.end())
-    {
-        if (suppress_diags_limit_json->is_number_integer())
-            new_config.diag_supress_limit = suppress_diags_limit_json->get<int64_t>();
-    }*/
-    local_config_ = lib_config::load_from_json(pgm_conf_json);
+    local_config_ = lib_config::load_from_json(pgm_config);
 
-    auto extensions_ptr = std::make_shared<const extension_regex_map>(std::move(extensions));
     // process processor groups
-    json pgs = proc_grps_json["pgroups"];
-    for (auto& pg : pgs)
+    for (auto& pg : proc_groups.pgroups)
     {
-        const std::string& name = pg["name"].get<std::string>();
-        const json& libs = pg["libs"];
-        std::map<std::string, std::string> asm_options;
-        try
-        {
-            if (pg.count("asm_options"))
-            {
-                asm_options = pg.at("asm_options").get<std::map<std::string, std::string>>();
-            }
-        }
-        catch (const nlohmann::basic_json<>::exception&)
-        {
-            file_ptr proc_grps_file =
-                file_manager_.add_file((ws_path / HLASM_PLUGIN_FOLDER / FILENAME_PROC_GRPS).string());
-            config_diags_.push_back(diagnostic_s::error_W002(proc_grps_file->get_file_name(), name_));
-        }
-        processor_group prc_grp(name);
+        processor_group prc_grp(pg.name, pg.asm_options);
 
-        for (auto& lib_path_json : libs)
+        for (const auto& lib : pg.libs)
         {
-            bool optional = false;
-            std::string path;
-            bool valid = false;
+            std::filesystem::path lib_path = [&path = lib.path]() {
+                if (!path.empty())
+                    return utils::path::join(path, "");
+                return std::filesystem::path {};
+            }();
+            if (!utils::path::is_absolute(lib_path))
+                lib_path = utils::path::join(ws_path, lib_path);
+            lib_path = utils::path::lexically_normal(lib_path);
 
-            if (lib_path_json.is_string())
+            library_local_options opts;
+            opts.optional_library = lib.optional;
+            if (!lib.macro_extensions.empty())
+                opts.extensions = lib.macro_extensions;
+            else if (!proc_groups.macro_extensions.empty())
+                opts.extensions = proc_groups.macro_extensions;
+            else if (!macro_extensions_compatibility_list.empty())
             {
-                // the added '/' will ensure the path always ends with directory separator
-                path = lib_path_json.get<std::string>();
-                valid = true;
-            }
-            else if (lib_path_json.is_object() && lib_path_json.count("path"))
-            {
-                if (auto pp = lib_path_json.find("path"); pp != lib_path_json.cend() && pp->is_string())
-                {
-                    path = pp->get<std::string>();
-                    if (auto op = lib_path_json.find("optional"); op != lib_path_json.cend())
-                    {
-                        if (op->is_boolean())
-                        {
-                            optional = op->get<bool>();
-                            valid = true;
-                        }
-                    }
-                    else
-                        valid = true;
-                }
+                opts.extensions = macro_extensions_compatibility_list;
+                opts.extensions_from_deprecated_source = true;
             }
 
-            if (valid)
-            {
-                std::filesystem::path lib_path = [&path]() {
-                    if (!path.empty())
-                        return utils::path::join(std::move(path), "");
-                    return std::filesystem::path {};
-                }();
 
-                if (utils::path::is_absolute(lib_path))
-                    prc_grp.add_library(std::make_unique<library_local>(
-                        file_manager_, utils::path::lexically_normal(lib_path).string(), extensions_ptr, optional));
-                else
-                    prc_grp.add_library(std::make_unique<library_local>(file_manager_,
-                        utils::path::lexically_normal(utils::path::join(ws_path, lib_path)).string(),
-                        extensions_ptr,
-                        optional));
-                // else ignore, publish warning
-            }
-        }
-        if (!asm_options.empty())
-        {
-            prc_grp.add_asm_options(asm_options);
+            prc_grp.add_library(std::make_unique<library_local>(file_manager_, lib_path.string(), std::move(opts)));
         }
 
         add_proc_grp(std::move(prc_grp));
     }
 
     // process programs
-    json pgms = pgm_conf_json["pgms"];
-    for (auto& pgm : pgms)
+    for (auto& pgm : pgm_config.pgms)
     {
-        std::string pgm_name = pgm["program"].get<std::string>();
-        const std::string& pgroup = pgm["pgroup"].get<std::string>();
-
-        if (proc_grps_.find(pgroup) != proc_grps_.end())
+        if (proc_grps_.find(pgm.pgroup) != proc_grps_.end())
         {
+            std::string pgm_name = pgm.program;
             if (utils::platform::is_windows())
-            {
-                // change of forward slash to double backslash on windows
-                static const std::regex slash("\\/");
-                pgm_name = std::regex_replace(pgm_name, slash, "\\");
-            }
+                std::replace(pgm_name.begin(), pgm_name.end(), '/', '\\');
+
             if (!is_wildcard(pgm_name))
-                exact_pgm_conf_.emplace(pgm_name, program { pgm_name, pgroup });
+                exact_pgm_conf_.emplace(pgm_name, program { pgm_name, pgm.pgroup });
             else
-                regex_pgm_conf_.push_back({ program { pgm_name, pgroup }, wildcard2regex(pgm_name) });
+                regex_pgm_conf_.push_back({ program { pgm_name, pgm.pgroup }, wildcard2regex(pgm_name) });
         }
         else
         {
@@ -464,7 +414,7 @@ bool workspace::load_and_process_config()
 
     return true;
 }
-bool workspace::load_config(nlohmann::json& proc_grps_json, nlohmann::json& pgm_conf_json, file_ptr& pgm_conf_file)
+bool workspace::load_config(config::proc_conf& proc_groups, config::pgm_conf& pgm_config, file_ptr& pgm_conf_file)
 {
     std::filesystem::path hlasm_base = utils::path::join(uri_, HLASM_PLUGIN_FOLDER);
 
@@ -476,8 +426,11 @@ bool workspace::load_config(nlohmann::json& proc_grps_json, nlohmann::json& pgm_
 
     try
     {
-        proc_grps_json = nlohmann::json::parse(proc_grps_file->get_text());
+        nlohmann::json::parse(proc_grps_file->get_text()).get_to(proc_groups);
         proc_grps_.clear();
+        for (const auto& pg : proc_groups.pgroups)
+            if (!pg.asm_options.valid())
+                config_diags_.push_back(diagnostic_s::error_W005(proc_grps_file->get_file_name(), pg.name));
     }
     catch (const nlohmann::json::exception&)
     {
@@ -494,7 +447,7 @@ bool workspace::load_config(nlohmann::json& proc_grps_json, nlohmann::json& pgm_
 
     try
     {
-        pgm_conf_json = nlohmann::json::parse(pgm_conf_file->get_text());
+        nlohmann::json::parse(pgm_conf_file->get_text()).get_to(pgm_config);
         exact_pgm_conf_.clear();
         regex_pgm_conf_.clear();
     }

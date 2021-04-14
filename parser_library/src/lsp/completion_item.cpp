@@ -127,6 +127,7 @@ const std::vector<completion_item_s> completion_item_s::instruction_completion_i
         auto mach_operands = instruction::machine_instructions[instr_name]->operands;
         auto no_optional = instruction::machine_instructions[instr_name]->no_optional;
         bool first = true;
+        std::vector<std::string> mnemonic_with_operand_ommited = { "VNOT", "NOTR", "NOTGR" };
 
 
         auto replaces = mnemonic_instr.replaced;
@@ -151,7 +152,14 @@ const std::vector<completion_item_s> completion_item_s::instruction_completion_i
                     // replace current for mnemonic
                     if (i != 0)
                         subs_ops_mnems << ",";
-                    subs_ops_mnems << std::to_string(value);
+                    if (std::find(
+                            mnemonic_with_operand_ommited.begin(), mnemonic_with_operand_ommited.end(), mnemonic_name)
+                        != mnemonic_with_operand_ommited.end())
+                    {
+                        subs_ops_mnems << mach_operands[i - 1].to_string();
+                    }
+                    else
+                        subs_ops_mnems << std::to_string(value);
                     iter_over_mnem++;
                     continue;
                 }

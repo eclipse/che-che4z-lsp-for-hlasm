@@ -22,6 +22,7 @@
 #include "../message_consumer_mock.h"
 #include "empty_configs.h"
 #include "lib_config.h"
+#include "nlohmann/json.hpp"
 #include "workspaces/file_impl.h"
 #include "workspaces/file_manager_impl.h"
 #include "workspaces/workspace.h"

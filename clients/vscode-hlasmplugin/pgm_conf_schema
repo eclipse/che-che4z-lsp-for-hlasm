@@ -1,40 +1,43 @@
 {
     "type": "object",
     "properties": {
-        "pgms": 
-        {
+        "pgms": {
             "description": "List of main programs",
             "type": "array",
             "items": {
                 "type": "object",
-                "properties" : {
+                "properties": {
                     "program": {
-                        "type" : "string",
-                        "description" : "Name/Wildcard of file to be considered as main program (open code)"
+                        "type": "string",
+                        "description": "Name/Wildcard of file to be considered as main program (open code)"
                     },
                     "pgroup": {
-                        "type" : "string",
-                        "description" : "Name of processor group as defined in proc_grps.json"
+                        "type": "string",
+                        "description": "Name of processor group as defined in proc_grps.json"
                     }
                 },
-                "required" : ["program", "pgroup"]
+                "required": [
+                    "program",
+                    "pgroup"
+                ]
             }
         },
-        "alwaysRecognize":
-        {
-            "description":"Array of wildcards.\nIf a file path (relatively to the root of the workspace) matches any of the wildcards, it is automatically recognized as HLASM.\nFor example:\n ASMPGM/* matches files in folder ASMPGM \n *.asm matches files with the extension .asm.\nPlease note that you don't have to provide a wildcard for the program files and the files that are inside processor group folder as they are already being recognized by default.",
+        "alwaysRecognize": {
+            "description": "(Deprecated) Array of wildcards.\nIf a file path (relatively to the root of the workspace) matches any of the wildcards, it is automatically recognized as HLASM.\nFor example:\n ASMPGM/* matches files in folder ASMPGM \n *.asm matches files with the extension .asm.\nPlease note that you don't have to provide a wildcard for the program files and the files that are inside processor group folder as they are already being recognized by default.",
             "type": "array",
             "items": {
-                "type" : "string",
-                "description" : "Wildcard"
-            }
+                "type": "string",
+                "description": "Wildcard"
+            },
+            "deprecated": true
         },
-        "diagnosticsSuppressLimit":
-        {
-            "description":"An integer that configures the limit of diagnostics shown when there is no configuration available for the opened file.\nFor files, that use macros extensively, but do not have the definitions available, it is very probable that diagnostics reported by HLASM Language support will not be helpful. That is why we provide the option to suppress the diagnostics if there are too many of them. Set to zero to disable all diagnostics for files without configuration.",
+        "diagnosticsSuppressLimit": {
+            "description": "An integer that configures the limit of diagnostics shown when there is no configuration available for the opened file.\nFor files, that use macros extensively, but do not have the definitions available, it is very probable that diagnostics reported by HLASM Language support will not be helpful. That is why we provide the option to suppress the diagnostics if there are too many of them. Set to zero to disable all diagnostics for files without configuration.",
             "type": "integer",
-            "minimum" : 0
+            "minimum": 0
         }
     },
-    "required" : ["pgms"]
+    "required": [
+        "pgms"
+    ]
 }

@@ -58,7 +58,7 @@ export class ConfigurationsHandler {
 
         // no workspace
         if (!vscode.workspace.workspaceFolders)
-            return ['',''];
+            return ['', ''];
 
         const doNotShowAgain = 'Do not track';
         // give option to create proc_grps
@@ -128,8 +128,8 @@ export class ConfigurationsHandler {
         if (content.pgroups) {
             (content.pgroups as any[]).forEach(pgroup => {
                 if (pgroup.libs)
-                    (pgroup.libs as string[]).forEach(lib => {
-                        const regex = this.convertWildcardToRegex(path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, lib, '*'));
+                    (pgroup.libs as any[]).forEach(lib => {
+                        const regex = this.convertWildcardToRegex(path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, lib.path || lib, '*'));
                         if (regex)
                             this.definedExpressions.push(regex);
                     })
@@ -141,7 +141,7 @@ export class ConfigurationsHandler {
     private createPgmTemplate(empty: boolean) {
         if (!fs.existsSync(this.folderPath))
             fs.mkdirSync(this.folderPath);
-            
+
         var programName = '';
         if (!empty)
             programName = vscode.window.activeTextEditor.document.fileName.split('\\').pop().split('/').pop();

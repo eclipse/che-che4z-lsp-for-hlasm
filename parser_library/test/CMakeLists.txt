@@ -27,6 +27,7 @@ target_sources(library_test PRIVATE
 )
 
 add_subdirectory(checking)
+add_subdirectory(config)
 add_subdirectory(context)
 add_subdirectory(debugging)
 add_subdirectory(export)

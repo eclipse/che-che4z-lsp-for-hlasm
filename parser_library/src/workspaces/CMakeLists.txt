@@ -17,8 +17,9 @@ target_sources(parser_library PRIVATE
 	file_manager.h
 	file_manager_impl.cpp
 	file_manager_impl.h
-	library.cpp
 	library.h
+	library_local.cpp
+	library_local.h
 	parse_lib_provider.cpp
 	parse_lib_provider.h
 	processor.h

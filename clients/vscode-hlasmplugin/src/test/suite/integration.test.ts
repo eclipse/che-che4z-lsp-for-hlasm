@@ -30,7 +30,8 @@ suite('Integration Test Suite', () => {
 		return new Promise((resolve) => { setTimeout(resolve, ms) });
 	};
 
-	suiteSetup(async () => {
+	suiteSetup(async function () {
+		this.timeout(10000);
 		// 'open' should be in workspace
 		const files = await vscode.workspace.findFiles(workspace_file);
 

@@ -14,6 +14,9 @@
 
 #include "lib_config.h"
 
+#include "config/pgm_conf.h"
+#include "nlohmann/json.hpp"
+
 namespace hlasm_plugin::parser_library {
 
 const lib_config lib_config::default_config = lib_config::make_default();
@@ -38,6 +41,16 @@ lib_config lib_config::load_from_json(const nlohmann::json& config)
             loaded.diag_supress_limit = 0;
     }
 
+
+    return loaded;
+}
+
+lib_config lib_config::load_from_json(const config::pgm_conf& config)
+{
+    lib_config loaded;
+
+    if (config.diagnostics_suppress_limit.has_value())
+        loaded.diag_supress_limit = config.diagnostics_suppress_limit.value();
 
     return loaded;
 }

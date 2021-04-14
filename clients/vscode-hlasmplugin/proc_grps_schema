@@ -1,24 +1,23 @@
 {
     "type": "object",
     "properties": {
-        "pgroups": 
-        {
+        "pgroups": {
             "description": "List of processor groups",
             "type": "array",
             "items": {
                 "type": "object",
-                "properties" : {
+                "properties": {
                     "name": {
-                        "type" : "string",
-                        "description" : "User-defined name of processor group"
+                        "type": "string",
+                        "description": "User-defined name of processor group"
                     },
                     "libs": {
-                        "type" : "array",
-                        "description" : "List of folders containing external files such as macros and copy.\nAll files inside these folders are being automatically recognized as HLASM.\nIf you would like to use dependency files with a specific extension, create an extension wildcard in pgm_conf.json for it.\nExtension wildcards must follow the format: [anything]*.[1+ non-whitespace characters], e.g. libs/*.hlasm or *.asm",
+                        "type": "array",
+                        "description": "List of folders containing external files such as macros and copy.\nAll files inside these folders are being automatically recognized as HLASM.\nIf you would like to use dependency files with a specific extension, create an extension wildcard in pgm_conf.json for it.\nExtension wildcards must follow the format: [anything]*.[1+ non-whitespace characters], e.g. libs/*.hlasm or *.asm",
                         "items": {
                             "anyOf": [
                                 {
-                                  "type": "string"
+                                    "type": "string"
                                 },
                                 {
                                     "type": "object",
@@ -30,23 +29,31 @@
                                         "optional": {
                                             "type": "boolean",
                                             "description": "Specifies if it is acceptable not to be able locate the folder."
+                                        },
+                                        "macro_extensions": {
+                                            "type": "array",
+                                            "description": "Files with macro definitions may have an extension defined in this list (overrides the top level list).\nNo extension is represented by an empty string.",
+                                            "items": {
+                                                "type": "string"
+                                            }
                                         }
                                     },
-                                    "required": [ "path" ]
+                                    "required": [
+                                        "path"
+                                    ]
                                 }
                             ]
-                         }
-                     
+                        }
                     },
                     "asm_options": {
                         "type": "object",
                         "description": "List of assembler options",
                         "properties": {
-                             "SYSPARM": {
+                            "SYSPARM": {
                                 "type": "string",
-                                "description": "It specifies the character string the assembler assigns to the &SYSPARM system variable symbol. ",
-                                "maxlength" : 255
-                             },
+                                "description": "It specifies the character string the assembler assigns to the &SYSPARM system variable symbol.",
+                                "maxlength": 255
+                            },
                             "PROFILE": {
                                 "type": "string",
                                 "description": "Profile Member to be copied into the source program."
@@ -54,9 +61,21 @@
                         }
                     }
                 },
-                "required" : ["name", "libs"]
+                "required": [
+                    "name",
+                    "libs"
+                ]
+            }
+        },
+        "macro_extensions": {
+            "type": "array",
+            "description": "Files with macro definitions may have an extension defined in this list.\nNo extension is represented by an empty string.",
+            "items": {
+                "type": "string"
             }
         }
     },
-    "required" : ["pgroups"]
+    "required": [
+        "pgroups"
+    ]
 }
