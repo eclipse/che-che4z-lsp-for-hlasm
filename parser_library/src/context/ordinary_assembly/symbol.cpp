@@ -169,3 +169,5 @@ void symbol::set_value(symbol_value value)
 void symbol::set_length(symbol_attributes::len_attr value) { attributes_.length(value); }
 
 void symbol::set_scale(symbol_attributes::scale_attr value) { attributes_.scale(value); }
+
+const processing_stack_t& symbol::proc_stack() const { return stack_; }

@@ -81,10 +81,12 @@ public:
 
     const id_index name;
     const location symbol_location;
+    const processing_stack_t& proc_stack() const;
 
 private:
     symbol_value value_;
     symbol_attributes attributes_;
+    processing_stack_t stack_;
 };
 
 } // namespace context
