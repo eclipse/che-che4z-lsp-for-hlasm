@@ -108,6 +108,8 @@ public:
         const std::string& library, const std::string& program, std::string* uri) const override;
     virtual asm_option get_asm_options(const std::string& file_name) const;
     virtual preprocessor_options get_preprocessor_options(const std::string& file_name) const;
+    std::set<std::filesystem::path> get_lib_list(std::filesystem::path lib_path);
+   std::set<std::filesystem::path> iterate_lib_path(std::string lib_path);
     const ws_uri& uri();
 
     void open();

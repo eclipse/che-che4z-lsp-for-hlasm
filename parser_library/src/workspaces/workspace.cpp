@@ -28,7 +28,6 @@
 #include "utils/path.h"
 #include "utils/platform.h"
 #include "wildcard.h"
-
 using json = nlohmann::json;
 
 namespace hlasm_plugin::parser_library::workspaces {
@@ -376,9 +375,12 @@ bool workspace::load_and_process_config()
                     return utils::path::join(path, "");
                 return std::filesystem::path {};
             }();
+            auto lib_regex = lib_path;
             if (!utils::path::is_absolute(lib_path))
                 lib_path = utils::path::join(ws_path, lib_path);
+
             lib_path = utils::path::lexically_normal(lib_path);
+            auto lib_paths = get_lib_list(lib_path);
 
             library_local_options opts;
             opts.optional_library = lib.optional;
@@ -392,8 +394,17 @@ bool workspace::load_and_process_config()
                 opts.extensions_from_deprecated_source = true;
             }
 
-
-            prc_grp.add_library(std::make_unique<library_local>(file_manager_, lib_path.string(), std::move(opts)));
+            if (lib_paths.size() > 0)
+            {
+                for (auto path : lib_paths)
+                {
+                    lib_path = path;
+                    prc_grp.add_library(
+                        std::make_unique<library_local>(file_manager_, lib_path.string(), std::move(opts)));
+                }
+            }
+            else
+                prc_grp.add_library(std::make_unique<library_local>(file_manager_, lib_path.string(), std::move(opts)));
         }
 
         add_proc_grp(std::move(prc_grp));
@@ -544,7 +555,47 @@ bool workspace::has_library(const std::string& library, const std::string& progr
 
     return false;
 }
+std::set<std::filesystem::path> workspace::get_lib_list(std::filesystem::path lib_folder_path)
+{
+    std::set<std::filesystem::path> list_of_libs, result;
+    list_of_libs.insert(lib_folder_path);
+    while (!list_of_libs.empty())
+    {
+        result = list_of_libs;
+        list_of_libs.clear();
+        for (auto path : result)
+        {
+            auto folder_path = iterate_lib_path(path.generic_string());
+            list_of_libs.insert(folder_path.begin(), folder_path.end());
+        }
+    }
+    return result;
+}
+std::set<std::filesystem::path> workspace::iterate_lib_path(std::string lib_path)
+{
+    std::set<std::filesystem::path> list_of_libs;
+    int found = lib_path.find("*");
+    if (found != std::string::npos)
+    {
+        int next_index = found + 1;
+        if ((found < lib_path.size()) && lib_path.at(next_index) == '*')
+        {
+            if (lib_path.substr(next_index).find("**") != std::string::npos)
+            {
+                config_diags_.push_back(diagnostic_s::error_L0005(lib_path));
+                list_of_libs.clear();
+                return list_of_libs;
+            }
 
+            list_of_libs = wildcard_recursive_search(lib_path, found);
+        }
+        else
+        {
+            list_of_libs = wildcard_current_search(lib_path, found);
+        }
+    }
+    return list_of_libs;
+}
 std::optional<std::string> workspace::get_library(
     const std::string& library, const std::string& program, std::string* uri) const
 {

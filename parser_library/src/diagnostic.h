@@ -726,6 +726,8 @@ public:
 
     static diagnostic_s warning_L0004(const std::string& path, const std::string& macro_name);
 
+    static diagnostic_s error_L0005(const std::string& path);
+
     static diagnostic_s error_W002(const std::string& file_name, const std::string& ws_name);
 
     static diagnostic_s error_W003(const std::string& file_name, const std::string& ws_name);

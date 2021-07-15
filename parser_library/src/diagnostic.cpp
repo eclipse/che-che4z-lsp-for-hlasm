@@ -1514,7 +1514,6 @@ diagnostic_op diagnostic_op::error_D030(const range& range, const std::string& t
     return diagnostic_op(diagnostic_severity::error, "D030", "Only single symbol expected with type " + type, range);
 }
 
-
 diagnostic_op diagnostic_op::error_M135(const std::string& instr_name, long long from, long long to, const range& range)
 {
     return diagnostic_op(diagnostic_severity::error,
@@ -2055,6 +2054,15 @@ diagnostic_s diagnostic_s::warning_L0004(const std::string& path, const std::str
         diagnostic_severity::warning,
         "L0004",
         "Library '" + path + "' contains multiple definitions of the macro '" + macro_name + "'.",
+        {});
+}
+diagnostic_s diagnostic_s::error_L0005(const std::string& path)
+{
+    return diagnostic_s("",
+        {},
+        diagnostic_severity::warning,
+        "L0005",
+        "Library '" + path + "' contains recursive search more than once '",
         {});
 }
 

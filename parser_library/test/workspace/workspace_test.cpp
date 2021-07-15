@@ -116,7 +116,6 @@ TEST_F(workspace_test, parse_lib_provider)
 }
 
 
-
 std::string pgroups_file = R"({
   "pgroups": [
     {
@@ -125,13 +124,36 @@ std::string pgroups_file = R"({
     }
   ]
 })";
-
+std::string pgroups_file_macro_search_currentdir = R"({
+  "pgroups": [
+    {
+      "name": "P1",
+      "libs": [ "lib/*" ]
+    }
+  ]
+})";
+std::string pgroups_file_macro_search_recursivedir = R"({
+  "pgroups": [
+    {
+      "name": "P1",
+      "libs": [ "lib/**" ]
+    }
+  ]
+})";
+std::string pgroups_file_macro_search_recursivedir_error = R"({
+  "pgroups": [
+    {
+      "name": "P1",
+      "libs": [ "lib/**/**" ]
+    }
+  ]
+})";
 std::string pgroups_file_old_school = R"({
   "pgroups": [
     {
       "name": "P1",
       "libs": [ "missing", "lib" ]
-    }
+    } 
   ]
 })";
 
@@ -233,6 +255,12 @@ std::string source_using_macro_file_no_error = R"( CORRECT)";
 
 const char* faulty_macro_path = is_windows() ? "lib\\ERROR" : "lib/ERROR";
 const char* correct_macro_path = is_windows() ? "lib\\CORRECT" : "lib/CORRECT";
+const char* macro_folder_path_currentdir = is_windows() ? "lib\\dir_one\\CORRECT" : "lib/dir_one/CORRECT";
+const char* macro_folder_path_recursivedir =
+    is_windows() ? "lib\\dir_one\\dir_two\\CORRECT" : "lib/dir_one/dir_two/CORRECT";
+const char* faulty_macro_folder = is_windows() ? "lib\\error\\" : "lib/error";
+const char* correct_macro_folder_currentdir = is_windows() ? "lib\\dir_one" : "lib/dir_one";
+const char* correct_macro_folder_recursivedir = is_windows() ? "lib\\dir_one\\dir_two" : "lib/dir_one/dir_two";
 std::string hlasmplugin_folder = is_windows() ? ".hlasmplugin\\" : ".hlasmplugin/";
 
 class file_manager_extended : public file_manager_impl
@@ -263,7 +291,61 @@ public:
 
     bool insert_correct_macro = true;
 };
+class file_manager_macro_current_dir : public file_manager_impl
+{
+public:
+    file_manager_macro_current_dir()
+    {
+        files_.emplace(hlasmplugin_folder + "proc_grps.json",
+            std::make_unique<file_with_text>("proc_grps.json", pgroups_file_macro_search_currentdir, *this));
+        files_.emplace(hlasmplugin_folder + "pgm_conf.json",
+            std::make_unique<file_with_text>("pgm_conf.json", pgmconf_file, *this));
+        files_.emplace("source1", std::make_unique<file_with_text>("source1", source_using_macro_file, *this));
 
+        files_.emplace(macro_folder_path_currentdir,
+            std::make_unique<file_with_text>(macro_folder_path_currentdir, correct_macro_file, *this));
+    }
+    list_directory_result list_directory_files(const std::string& path) override
+    {
+        if (path == "lib/dir_one/" || path == "lib\\dir_one\\")
+            return { { { "CORRECT", "CORRECT" } }, hlasm_plugin::utils::path::list_directory_rc::done };
+
+        return { {}, hlasm_plugin::utils::path::list_directory_rc::not_exists };
+    }
+};
+class file_manager_macro_recursive_dir : public file_manager_impl
+{
+public:
+    file_manager_macro_recursive_dir()
+    {
+        files_.emplace(hlasmplugin_folder + "proc_grps.json",
+            std::make_unique<file_with_text>("proc_grps.json", pgroups_file_macro_search_recursivedir, *this));
+        files_.emplace(hlasmplugin_folder + "pgm_conf.json",
+            std::make_unique<file_with_text>("pgm_conf.json", pgmconf_file, *this));
+        files_.emplace("source1", std::make_unique<file_with_text>("source1", source_using_macro_file, *this));
+
+        files_.emplace(macro_folder_path_recursivedir,
+            std::make_unique<file_with_text>(macro_folder_path_recursivedir, correct_macro_file, *this));
+    }
+    file_manager_macro_recursive_dir(bool)
+    {
+        files_.emplace(hlasmplugin_folder + "proc_grps.json",
+            std::make_unique<file_with_text>("proc_grps.json", pgroups_file_macro_search_recursivedir_error, *this));
+        files_.emplace(hlasmplugin_folder + "pgm_conf.json",
+            std::make_unique<file_with_text>("pgm_conf.json", pgmconf_file, *this));
+        files_.emplace("source1", std::make_unique<file_with_text>("source1", source_using_macro_file, *this));
+
+        files_.emplace(macro_folder_path_recursivedir,
+            std::make_unique<file_with_text>(macro_folder_path_recursivedir, correct_macro_file, *this));
+    }
+    list_directory_result list_directory_files(const std::string& path) override
+    {
+        if (path == "lib/dir_one/dir_two" || path == "lib\\dir_one\\dir_two\\")
+            return { { { "CORRECT", "CORRECT" } }, hlasm_plugin::utils::path::list_directory_rc::done };
+
+        return { {}, hlasm_plugin::utils::path::list_directory_rc::not_exists };
+    }
+};
 enum class file_manager_opt_variant
 {
     old_school,
@@ -448,4 +530,62 @@ TEST_F(workspace_test, library_list_failure)
     ws.did_open_file("source1");
     EXPECT_GE(collect_and_get_diags_size(ws, file_manager), (size_t)1);
     EXPECT_TRUE(std::any_of(diags().begin(), diags().end(), [](const auto& d) { return d.code == "L0001"; }));
+}
+TEST_F(workspace_test, library_list_current_dir_search)
+{
+    file_manager_macro_current_dir fm;
+    lib_config config;
+    workspace ws("", "macro_workspace", fm, config);
+    std::filesystem::create_directories(correct_macro_folder_currentdir);
+    ws.open();
+    ws.did_open_file("source1");
+    EXPECT_GE(collect_and_get_diags_size(ws, fm), (size_t)0);
+    std::filesystem::remove_all("lib");
+}
+TEST_F(workspace_test, library_list_recursive_dir_search)
+{
+    file_manager_macro_recursive_dir fm;
+    lib_config config;
+    workspace ws("", "macro_workspace", fm, config);
+    std::filesystem::create_directories(correct_macro_folder_recursivedir);
+    ws.open();
+    ws.did_open_file("source1");
+    EXPECT_GE(collect_and_get_diags_size(ws, fm), (size_t)0);
+    std::filesystem::remove_all("lib");
+}
+TEST_F(workspace_test, library_list_recursive_dir_search_error)
+{
+    file_manager_macro_recursive_dir fm;
+    lib_config config;
+    workspace ws("", "macro_workspace", fm, config);
+    std::filesystem::create_directories(correct_macro_folder_currentdir);
+    ws.open();
+    ws.did_open_file("source1");
+    EXPECT_GE(collect_and_get_diags_size(ws, fm), (size_t)1);
+    EXPECT_TRUE(std::any_of(diags().begin(), diags().end(), [](const auto& d) { return d.code == "L0002"; }));
+    std::filesystem::remove_all("lib");
+}
+TEST_F(workspace_test, library_list_recursive_dir_search_twice_error)
+{
+    file_manager_macro_recursive_dir fm(false);
+    lib_config config;
+    workspace ws("", "macro_workspace", fm, config);
+    std::filesystem::create_directories(correct_macro_folder_recursivedir);
+    ws.open();
+    ws.did_open_file("source1");
+    EXPECT_GE(collect_and_get_diags_size(ws, fm), (size_t)1);
+    EXPECT_TRUE(std::any_of(diags().begin(), diags().end(), [](const auto& d) { return d.code == "L0005"; }));
+    std::filesystem::remove_all("lib");
+}
+TEST_F(workspace_test, library_list_current_dirpath_error)
+{
+    file_manager_macro_current_dir fm;
+    lib_config config;
+    workspace ws("", "macro_workspace", fm, config);
+    std::filesystem::create_directories(faulty_macro_folder);
+    ws.open();
+    ws.did_open_file("source1");
+    EXPECT_GE(collect_and_get_diags_size(ws, fm), (size_t)1);
+    EXPECT_TRUE(std::any_of(diags().begin(), diags().end(), [](const auto& d) { return d.code == "L0002"; }));
+    std::filesystem::remove_all("lib");
 }

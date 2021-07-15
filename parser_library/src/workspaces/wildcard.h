@@ -15,12 +15,16 @@
 #ifndef HLASMPLUGIN_PARSERLIBRARY_WILDCARD_H
 #define HLASMPLUGIN_PARSERLIBRARY_WILDCARD_H
 
+#include <filesystem>
 #include <regex>
+#include <set>
+#include <string>
 
 namespace hlasm_plugin::parser_library::workspaces {
 // Returns a regex that can be used for wildcard matching.
 std::regex wildcard2regex(const std::string& wildcard);
-
+std::set<std::filesystem::path> wildcard_recursive_search(std::string lib_path, int pos);
+std::set<std::filesystem::path> wildcard_current_search(std::string lib_path, int pos);
 } // namespace hlasm_plugin::parser_library::workspaces
 
 #endif
