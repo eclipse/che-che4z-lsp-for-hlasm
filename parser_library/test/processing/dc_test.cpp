@@ -171,6 +171,25 @@ A DC FS(X+14)'1'
     EXPECT_EQ(a.diags().size(), (size_t)0);
 }
 
+TEST(DC, scale_with_unary_op)
+{
+    std::string input = R"(
+P DC FS+12'1'
+M DC FS-12'1'
+)";
+
+    analyzer a(input);
+    a.analyze();
+    a.collect_diags();
+
+    EXPECT_EQ(a.hlasm_ctx().ord_ctx.get_symbol(a.hlasm_ctx().ids().add("P"))->attributes().scale(),
+        (symbol_attributes::scale_attr)12);
+    EXPECT_EQ(a.hlasm_ctx().ord_ctx.get_symbol(a.hlasm_ctx().ids().add("M"))->attributes().scale(),
+        (symbol_attributes::scale_attr)-12);
+
+    EXPECT_EQ(a.diags().size(), (size_t)0);
+}
+
 TEST(DC, cyclic_len_non_forward)
 {
     std::string input = R"(

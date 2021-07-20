@@ -393,3 +393,9 @@ TEST(data_definition, trim_labels)
     a.collect_diags();
     ASSERT_EQ(a.diags().size(), 0);
 }
+
+TEST(data_definition, externals)
+{
+    expect_no_errors(" EXTRN E1,E2\n DC A(E1,E2)");
+    expect_no_errors(" WXTRN W1,W2\n DC A(W1,W2)");
+}

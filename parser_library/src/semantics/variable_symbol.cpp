@@ -64,7 +64,11 @@ const created_variable_symbol* variable_symbol::access_created() const
 
 vs_eval variable_symbol::evaluate_symbol(const expressions::evaluation_context& eval_ctx) const
 {
-    auto name = evaluate_name(eval_ctx);
+    return vs_eval(evaluate_name(eval_ctx), evaluate_subscript(eval_ctx));
+}
+
+std::vector<context::A_t> variable_symbol::evaluate_subscript(const expressions::evaluation_context& eval_ctx) const
+{
     std::vector<context::A_t> eval_subscript;
     for (const auto& expr : subscript)
     {
@@ -72,7 +76,7 @@ vs_eval variable_symbol::evaluate_symbol(const expressions::evaluation_context& 
         eval_subscript.push_back(val);
     }
 
-    return vs_eval(name, std::move(eval_subscript));
+    return eval_subscript;
 }
 
 context::SET_t variable_symbol::evaluate(const expressions::evaluation_context& eval_ctx) const

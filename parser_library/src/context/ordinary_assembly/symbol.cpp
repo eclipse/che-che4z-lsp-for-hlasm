@@ -25,10 +25,10 @@ symbol_value::symbol_value(abs_value_t value)
 {}
 
 symbol_value::symbol_value(reloc_value_t value)
-    : value_(value)
+    : value_(std::move(value))
 {}
 
-symbol_value::symbol_value() {}
+symbol_value::symbol_value() = default;
 
 symbol_value symbol_value::operator+(const symbol_value& value) const
 {
@@ -72,7 +72,7 @@ symbol_value symbol_value::operator-(const symbol_value& value) const
         if (value.value_kind() == symbol_value_kind::ABS)
             return get_abs() - value.get_abs();
         else
-            return value.get_reloc() - get_abs();
+            return -value.get_reloc() + get_abs();
     }
     else if (value_kind() == symbol_value_kind::RELOC)
     {
@@ -126,15 +126,6 @@ symbol_value symbol_value::operator-() const
     }
 }
 
-symbol_value& symbol_value::operator=(const symbol_value& value)
-{
-    if (value_kind() != symbol_value_kind::UNDEF)
-        throw std::runtime_error("assigning to defined symbol");
-
-    value_ = value.value_;
-    return *this;
-}
-
 const symbol_value::abs_value_t& symbol_value::get_abs() const { return std::get<abs_value_t>(value_); }
 
 const symbol_value::reloc_value_t& symbol_value::get_reloc() const { return std::get<reloc_value_t>(value_); }
@@ -162,7 +153,7 @@ void symbol::set_value(symbol_value value)
     if (kind() != symbol_value_kind::UNDEF)
         throw std::runtime_error("can not assign value to already defined symbol");
 
-    value_ = value;
+    value_ = std::move(value);
 }
 
 void symbol::set_length(symbol_attributes::len_attr value) { attributes_.length(value); }

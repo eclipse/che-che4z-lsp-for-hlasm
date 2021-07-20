@@ -57,6 +57,7 @@ private:
     void process_DS(rebuilt_statement stmt);
     void process_COPY(rebuilt_statement stmt);
     void process_EXTRN(rebuilt_statement stmt);
+    void process_WXTRN(rebuilt_statement stmt);
     void process_ORG(rebuilt_statement stmt);
     void process_OPSYN(rebuilt_statement stmt);
     void process_AINSERT(rebuilt_statement stmt);

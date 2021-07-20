@@ -15,6 +15,7 @@
 #include "data_definition.h"
 
 #include <assert.h>
+#include <limits>
 #include <set>
 #include <stdexcept>
 
@@ -381,52 +382,69 @@ data_definition::parser::parser(
     context::to_upper(format_);
 }
 
-bool is_number_char(unsigned char c) { return isdigit(c) || c == '-'; }
-
-size_t data_definition::parser::get_number_end(size_t begin)
+constexpr unsigned char digit_to_value(unsigned char c)
 {
-    size_t i = begin;
-    while (i < format_.size() && is_number_char(format_[i]))
-        ++i;
-    return i;
+    static_assert((unsigned char)'0' + 0 == '0');
+    static_assert((unsigned char)'0' + 1 == '1');
+    static_assert((unsigned char)'0' + 2 == '2');
+    static_assert((unsigned char)'0' + 3 == '3');
+    static_assert((unsigned char)'0' + 4 == '4');
+    static_assert((unsigned char)'0' + 5 == '5');
+    static_assert((unsigned char)'0' + 6 == '6');
+    static_assert((unsigned char)'0' + 7 == '7');
+    static_assert((unsigned char)'0' + 8 == '8');
+    static_assert((unsigned char)'0' + 9 == '9');
+    return c - '0';
 }
 
 // parses a number that begins on index begin in format_ string. Leaves index of the first character after the number in
 // begin.
 std::optional<int> data_definition::parser::parse_number()
 {
-    std::optional<int> parsed;
-    try
+    constexpr long long min_l = -(1LL << 31);
+    constexpr long long max_l = (1LL << 31) - 1;
+    constexpr long long parse_limit_l = (1LL << 31);
+    static_assert(std::numeric_limits<int>::min() <= min_l);
+    static_assert(std::numeric_limits<int>::max() >= max_l);
+
+    const auto initial_p = p_;
+    const position initial_pos = pos_;
+
+    long long v = 0;
+    const bool negative = format_[p_] == '-';
+    bool parsed_one = false;
+    if (format_[p_] == '+' || negative)
+        ++p_;
+    while (p_ < format_.size())
     {
-        position begin_pos = pos_;
-        size_t pos;
-        parsed = std::stoi(format_.substr(p_), &pos);
-        p_ += pos;
-        pos_.column += pos;
-        collector_.add_hl_symbol(token_info(range(begin_pos, pos_), semantics::hl_scopes::number));
-        return parsed;
+        unsigned char c = format_[p_];
+        if (!isdigit(c))
+            break;
+        parsed_one = true;
+        ++p_;
+
+        if (v > parse_limit_l)
+            continue;
+
+        v = v * 10 + digit_to_value(c);
     }
-    catch (std::out_of_range&)
+    pos_.column += p_ - initial_p;
+    if (!parsed_one)
     {
-        size_t end = get_number_end(p_); // Integer out of range
-        position new_pos = { pos_.line, pos_.column + (end - p_) };
-        result_.add_diagnostic(diagnostic_op::error_D001({ pos_, new_pos }));
-        p_ = end;
-        pos_ = new_pos;
+        result_.add_diagnostic(diagnostic_op::error_D002({ initial_pos, pos_ }));
         return std::nullopt;
     }
-    catch (std::invalid_argument&)
+    if (negative)
+        v = -v;
+    if (v < min_l || v > max_l)
     {
-        size_t end = get_number_end(p_); // Expected an integer
-        position new_pos = { pos_.line, pos_.column + (end - p_) };
-        result_.add_diagnostic(diagnostic_op::error_D002({ pos_, new_pos }));
-        p_ = end;
-        pos_ = new_pos;
+        result_.add_diagnostic(diagnostic_op::error_D001({ initial_pos, pos_ }));
         return std::nullopt;
     }
+    collector_.add_hl_symbol(token_info(range(initial_pos, pos_), semantics::hl_scopes::number));
+
+    return (int)v;
 }
-
-
 
 void data_definition::parser::update_position(const mach_expression& e)
 {
@@ -437,7 +455,7 @@ void data_definition::parser::update_position_by_one() { ++pos_.column; }
 
 void data_definition::parser::parse_duplication_factor()
 {
-    if (is_number_char(format_[0])) // duplication factor is present
+    if (isdigit(format_[0]) || format_[0] == '-') // duplication factor is present
     {
         position old_pos = pos_;
         auto dupl_factor_num = parse_number();
@@ -478,7 +496,7 @@ mach_expr_ptr data_definition::parser::move_next_expression()
 
 mach_expr_ptr data_definition::parser::parse_modifier_num_or_expr()
 {
-    if (is_number_char(format_[p_]))
+    if (auto c = format_[p_]; isdigit(c) || c == '-' || c == '+')
     {
         position old_pos = pos_;
         auto modifier = parse_number();

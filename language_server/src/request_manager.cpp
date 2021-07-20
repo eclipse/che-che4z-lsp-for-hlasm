@@ -49,13 +49,13 @@ void request_manager::add_request(server* server, json message)
             // mark redundant requests as non valid
             for (auto& req : requests_)
             {
-                if (get_request_file_(req.message) == file)
+                if (req.valid && get_request_file_(req.message) == file)
                     req.valid = false;
             }
         }
 
         // finally add it to the q
-        requests_.push_back(request(message, server));
+        requests_.push_back(request(std::move(message), server));
     }
     // wake up the worker thread
     cond_.notify_one();
@@ -140,7 +140,7 @@ void request_manager::finish_server_requests(server* to_finish)
 }
 
 
-std::string request_manager::get_request_file_(json r, bool* is_parsing_required) const
+std::string request_manager::get_request_file_(const json& r, bool* is_parsing_required) const
 {
     constexpr const char* didOpen = "textDocument/didOpen";
     constexpr const char* didChange = "textDocument/didChange";
@@ -148,7 +148,7 @@ std::string request_manager::get_request_file_(json r, bool* is_parsing_required
     auto found = r.find("method");
     if (found == r.end())
         return "";
-    auto method = r["method"].get<std::string>();
+    auto method = found->get<std::string>();
     if (method.substr(0, 12) == "textDocument")
     {
         if (is_parsing_required)
@@ -158,7 +158,16 @@ std::string request_manager::get_request_file_(json r, bool* is_parsing_required
             else
                 *is_parsing_required = false;
         }
-        return r["params"]["textDocument"]["uri"].get<std::string>();
+        const auto params = r.find("params");
+        if (params == r.end())
+            return "";
+        const auto textDocument = params->find("textDocument");
+        if (textDocument == params->end())
+            return "";
+        const auto uri = textDocument->find("uri");
+        if (uri == textDocument->end())
+            return "";
+        return uri->get<std::string>();
     }
-    return std::string();
+    return "";
 }

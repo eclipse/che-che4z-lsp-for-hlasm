@@ -110,6 +110,19 @@ public:
             data.insert_or_assign(idx, std::move(value));
     }
 
+    // reserves storage for the object value
+    T& reserve_value() { return data[0]; }
+
+    // reserves storage for the object value
+    // any index can be accessed
+    T& reserve_value(size_t idx)
+    {
+        if (is_scalar)
+            return data[0];
+        else
+            return data[idx];
+    }
+
     // N' attribute of the symbol
     A_t number(std::vector<size_t>) const override
     {

@@ -135,6 +135,7 @@ data_def_ch returns [std::string value]
 	| NUM										{$value = $NUM->getText();}
 	| ORDSYMBOL									{$value = $ORDSYMBOL->getText();}
 	| minus										{$value = "-";}
+	| plus										{$value = "+";}
 	| DOT										{$value = ".";};
 
 data_def_id returns [std::string value]

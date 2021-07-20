@@ -246,7 +246,7 @@ bool title::check(const std::vector<const asm_operand*>& to_check,
         return false;
     }
     const auto& op_id = first->operand_identifier;
-    if (op_id.size() > TITLE_max_length || op_id.size() < 3)
+    if (op_id.size() > TITLE_max_length || op_id.size() < 2)
     {
         add_diagnostic(diagnostic_op::error_A106_TITLE_string_chars(first->operand_range));
         return false;

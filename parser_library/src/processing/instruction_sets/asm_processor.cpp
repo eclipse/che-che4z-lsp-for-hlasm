@@ -323,14 +323,33 @@ void asm_processor::process_COPY(rebuilt_statement stmt)
 
 void asm_processor::process_EXTRN(rebuilt_statement stmt)
 {
-    if (stmt.operands_ref().value.size())
+    for (const auto& op : stmt.operands_ref().value)
     {
-        if (auto op = stmt.operands_ref().value.front()->access_asm())
+        if (auto op_asm = op->access_asm())
         {
-            if (auto expr = op->access_expr())
+            if (auto expr = op_asm->access_expr())
             {
                 auto sym = dynamic_cast<const expressions::mach_expr_symbol*>(expr->expression.get());
                 if (sym)
+                    create_symbol(sym->get_range(),
+                        sym->value,
+                        hlasm_ctx.ord_ctx.align(context::no_align),
+                        context::symbol_attributes::make_extrn_attrs());
+            }
+        }
+    }
+    check(stmt, hlasm_ctx, checker_, *this);
+}
+
+void asm_processor::process_WXTRN(rebuilt_statement stmt)
+{
+    for (const auto& op : stmt.operands_ref().value)
+    {
+        if (auto op_asm = op->access_asm())
+        {
+            if (auto expr = op_asm->access_expr())
+            {
+                if (auto sym = dynamic_cast<const expressions::mach_expr_symbol*>(expr->expression.get()))
                     create_symbol(sym->get_range(),
                         sym->value,
                         hlasm_ctx.ord_ctx.align(context::no_align),
@@ -590,6 +609,7 @@ asm_processor::process_table_t asm_processor::create_table(context::hlasm_contex
     table.emplace(h_ctx.ids().add("DS"), std::bind(&asm_processor::process_DS, this, std::placeholders::_1));
     table.emplace(h_ctx.ids().well_known.COPY, std::bind(&asm_processor::process_COPY, this, std::placeholders::_1));
     table.emplace(h_ctx.ids().add("EXTRN"), std::bind(&asm_processor::process_EXTRN, this, std::placeholders::_1));
+    table.emplace(h_ctx.ids().add("WXTRN"), [this](rebuilt_statement stmt) { process_WXTRN(std::move(stmt)); });
     table.emplace(h_ctx.ids().add("ORG"), std::bind(&asm_processor::process_ORG, this, std::placeholders::_1));
     table.emplace(h_ctx.ids().add("OPSYN"), std::bind(&asm_processor::process_OPSYN, this, std::placeholders::_1));
     table.emplace(h_ctx.ids().add("AINSERT"), std::bind(&asm_processor::process_AINSERT, this, std::placeholders::_1));

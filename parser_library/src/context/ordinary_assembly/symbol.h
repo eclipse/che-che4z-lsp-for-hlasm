@@ -48,8 +48,6 @@ struct symbol_value
     symbol_value operator/(const symbol_value& value) const;
     symbol_value operator-() const;
 
-    symbol_value& operator=(const symbol_value& value);
-
     const abs_value_t& get_abs() const;
     const reloc_value_t& get_reloc() const;
 

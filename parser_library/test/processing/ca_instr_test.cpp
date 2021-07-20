@@ -456,3 +456,15 @@ B EQU 1
 
     ASSERT_EQ(a.diags().size(), (size_t)3);
 }
+
+TEST(var_subs, defined_by_self_ref)
+{
+    std::string input("&VAR(N'&VAR+1) SETA N'&VAR+1");
+    analyzer a(input);
+    a.analyze();
+    a.collect_diags();
+
+    EXPECT_TRUE(a.diags().empty());
+
+    EXPECT_EQ(get_var_vector<A_t>(a.hlasm_ctx(), "VAR"), std::vector<A_t> { 2 });
+}

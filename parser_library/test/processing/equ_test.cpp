@@ -189,3 +189,18 @@ LEM EQU 11,1,300
     a.collect_diags();
     ASSERT_EQ(a.diags().size(), (size_t)2);
 }
+
+TEST(EQU, loctr_use)
+{
+    std::string input = R"(
+A  DS    A
+B  EQU   256
+C  EQU   B-*+A
+   DS    XL(C)
+)";
+
+    analyzer a(input);
+    a.analyze();
+    a.collect_diags();
+    ASSERT_EQ(a.diags().size(), (size_t)0);
+}

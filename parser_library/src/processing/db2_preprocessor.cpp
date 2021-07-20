@@ -353,16 +353,16 @@ class db2_preprocessor : public preprocessor
         switch (scale)
         {
             case 'K':
-                result.scale = 1024ull;
+                result.scale = 1024ULL;
                 break;
             case 'M':
-                result.scale = 1024ull * 1024;
+                result.scale = 1024ULL * 1024;
                 break;
             case 'G':
-                result.scale = 1024ull * 1024 * 1024;
+                result.scale = 1024ULL * 1024 * 1024;
                 break;
             default:
-                result.scale = 1ull;
+                result.scale = 1ULL;
                 break;
         }
         switch (type)

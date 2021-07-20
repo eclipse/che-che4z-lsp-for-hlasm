@@ -66,7 +66,7 @@ private:
     std::atomic<server*> currently_running_server_ = nullptr;
 
     void handle_request_(const std::atomic<bool>* end_loop);
-    std::string get_request_file_(json r, bool* is_parsing_required = nullptr) const;
+    std::string get_request_file_(const json& r, bool* is_parsing_required = nullptr) const;
 
     std::deque<request> requests_;
 

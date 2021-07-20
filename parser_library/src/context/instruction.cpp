@@ -688,11 +688,11 @@ hlasm_plugin::parser_library::context::instruction::get_machine_instructions()
     add_machine_instr(result, "OIY", mach_format::SIY, { db_20_4_S, imm_8_U }, 795);
     add_machine_instr(result, "OC", mach_format::SS_a, { db_12_8x4L_U, db_12_4_U }, 795);
     add_machine_instr(result, "OIHF", mach_format::RIL_a, { reg_4_U, imm_32_S }, 796);
-    add_machine_instr(result, "OIHH", mach_format::RI_a, { reg_4_U, imm_16_S }, 796);
-    add_machine_instr(result, "OIHL", mach_format::RI_a, { reg_4_U, imm_16_S }, 796);
+    add_machine_instr(result, "OIHH", mach_format::RI_a, { reg_4_U, imm_16_U }, 796);
+    add_machine_instr(result, "OIHL", mach_format::RI_a, { reg_4_U, imm_16_U }, 796);
     add_machine_instr(result, "OILF", mach_format::RIL_a, { reg_4_U, imm_32_S }, 796);
-    add_machine_instr(result, "OILH", mach_format::RI_a, { reg_4_U, imm_16_S }, 796);
-    add_machine_instr(result, "OILL", mach_format::RI_a, { reg_4_U, imm_16_S }, 796);
+    add_machine_instr(result, "OILH", mach_format::RI_a, { reg_4_U, imm_16_U }, 796);
+    add_machine_instr(result, "OILL", mach_format::RI_a, { reg_4_U, imm_16_U }, 796);
     add_machine_instr(result, "PACK", mach_format::SS_b, { db_12_4x4L_U, db_12_4x4L_U }, 796);
     add_machine_instr(result, "PKA", mach_format::SS_f, { db_12_4_U, db_12_8x4L_U }, 797);
     add_machine_instr(result, "PKU", mach_format::SS_f, { db_12_4_U, db_12_8x4L_U }, 798);
